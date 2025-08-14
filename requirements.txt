@@ -1,0 +1,10 @@
+django>=5.0
+django-redis
+psycopg2-binary
+channels
+channels-redis
+celery
+djangorestframework
+amqp
+uvicorn[standard]
+daphne
