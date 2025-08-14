@@ -1,0 +1,2 @@
+# bidlord
+A bidding tool
