@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>BidLord - Bidding Platform API</title>
+        {% load static %}
+        <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    </head>
+
+    <body>
+        <div class="header">
+            <div class="container">
+                <h1>🏆 BidLord API</h1>
+                <p>A comprehensive bidding platform API</p>
+                <a href="/api/docs/" class="api-docs-link">View API Documentation</a>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="features">
+                <div class="feature-card">
+                    <h3><span class="status-indicator"></span>Authentication</h3>
+                    <ul>
+                        <li>JWT Token Authentication</li>
+                        <li>User Registration & Login</li>
+                        <li>Token Blacklisting</li>
+                        <li>Profile Management</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h3><span class="status-indicator"></span>Bidding System</h3>
+                    <ul>
+                        <li>Real-time Bidding (Coming Soon)</li>
+                        <li>Auction Management (Coming Soon)</li>
+                        <li>Bid History (Coming Soon)</li>
+                        <li>WebSocket Support</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <h3><span class="status-indicator"></span>Infrastructure</h3>
+                    <ul>
+                        <li>Django REST Framework</li>
+                        <li>PostgreSQL Database</li>
+                        <li>Redis Caching</li>
+                        <li>Celery Background Tasks</li>
+                        <li>Docker Containerization</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-card" style="margin-top: 40px; text-align: center;">
+                <h3>API Endpoints</h3>
+                <p>
+                    <a href="/api/docs/" target="_blank">Swagger UI</a> |
+                    <a href="/api/redoc/" target="_blank">ReDoc</a> |
+                    <a href="/api/schema/" target="_blank">OpenAPI Schema</a>
+                </p>
+                <p>
+                    <a href="/admin/" target="_blank">Django Admin</a>
+                </p>
+            </div>
+        </div>
+
+        <script src="{% static 'js/main.js' %}"></script>
+    </body>
+
+</html>

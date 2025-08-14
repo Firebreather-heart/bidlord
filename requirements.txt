@@ -10,3 +10,4 @@ amqp
 uvicorn[standard]
 daphne
 djangorestframework-simplejwt
+whitenoise

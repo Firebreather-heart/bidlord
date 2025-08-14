@@ -209,3 +209,10 @@ __marimo__/
 # Logs
 logs/
 *.log
+
+# Static files
+staticfiles/
+.static/
+
+# Media files
+media/

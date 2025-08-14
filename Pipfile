@@ -13,6 +13,10 @@ djangorestframework = "*"
 amqp = "*"
 drf-spectacular = "*"
 djangorestframework-simplejwt = "*"
+channels-redis = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+daphne = "*"
+whitenoise = "*"
 
 [dev-packages]
 
