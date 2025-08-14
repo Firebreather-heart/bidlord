@@ -5,6 +5,8 @@ channels
 channels-redis
 celery
 djangorestframework
+drf-spectacular
 amqp
 uvicorn[standard]
 daphne
+djangorestframework-simplejwt

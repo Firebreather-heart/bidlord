@@ -15,9 +15,16 @@ services:
 
   app:
     build: .
-    command: daphne -b 0.0.0.0 -p 8000 bidlord.asgi:application
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        python manage.py migrate --settings=bidlord.config.local &&
+        echo 'Starting application...' &&
+        daphne -b 0.0.0.0 -p 8000 bidlord.asgi:application
+      "
     volumes:
       - .:/app
+      - app_logs:/app/logs
     ports:
       - "8000:8000"
     environment:
@@ -41,6 +48,7 @@ services:
     command: celery -A bidlord worker --loglevel=info --settings=bidlord.config.local
     volumes:
       - .:/app
+      - app_logs:/app/logs
     environment:
       - DATABASE_NAME=${DATABASE_NAME}
       - DATABASE_USER=${DATABASE_USER}
@@ -60,6 +68,7 @@ services:
     command: celery -A bidlord beat --loglevel=info --settings=bidlord.config.local
     volumes:
       - .:/app
+      - app_logs:/app/logs
     environment:
       - DATABASE_NAME=${DATABASE_NAME}
       - DATABASE_USER=${DATABASE_USER}
@@ -76,3 +85,4 @@ services:
 
 volumes:
   postgres_data:
+  app_logs:

@@ -25,6 +25,13 @@ COPY . .
 # Remove unnecessary files from the container
 RUN rm -f docker-compose.yml Dockerfile .gitignore
 
+RUN mkdir -p /app/logs
+
+# Set proper permissions for logs
+RUN chown -R 1000:1000 /app/logs
+
+RUN python manage.py collectstatic --noinput --settings=bidlord.config.local
+
 # Expose the port for the Django development server
 EXPOSE 8000
 

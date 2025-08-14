@@ -11,6 +11,8 @@ channels = "*"
 celery = "*"
 djangorestframework = "*"
 amqp = "*"
+drf-spectacular = "*"
+djangorestframework-simplejwt = "*"
 
 [dev-packages]
 
