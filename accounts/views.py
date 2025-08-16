@@ -148,7 +148,7 @@ class LogoutAPIView(APIView):
                 return CustomResponse.no_content()
             except Exception as e:
                 logger.error(
-                    "Error occured during logout"
+                    f"Error occured during logout {e}"
                 )
                 return CustomResponse.internal_server_error()
         else:
@@ -186,7 +186,7 @@ class UserChangeAPIView(APIView):
         if serializer.is_valid():
             try:
                 user = serializer.save()
-                response_serializer = UserSerializer(user)
+                response_serializer = UserSerializer(request.user)
                 logger.info(
                     f"{user}'s profile updated successfully"
                 )
@@ -207,3 +207,24 @@ class UserChangeAPIView(APIView):
                 message='profile update failed',
                 errors=serializer.errors
             )
+        
+class ProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    @extend_schema(
+        operation_id='view_user_profile',
+        summary='View User Profile',
+        description='Inspect user profile information',
+        responses={
+            200: UserSerializer,
+            403: {'description': 'Authentication errors'},
+            500: {'description': 'Internal server error'}
+        },
+        tags=['Users']
+    )
+    def get(self, request):
+        user = request.user
+        return CustomResponse.success(
+            data = UserSerializer(user).data
+        )

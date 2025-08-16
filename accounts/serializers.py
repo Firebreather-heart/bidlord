@@ -11,8 +11,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 
 
-
-
 class UserCreationSerializer(ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True, min_length=8)
@@ -56,13 +54,15 @@ class UserChangeSerializer(ModelSerializer):
             'username': {'required': False}
         }
 
-
     def validate(self, attrs):
         if not attrs:
-            raise serializers.ValidationError("At least one field must be updated")
-        if 'username' in attrs and CustomUser.objects.filter( models.Q(username=attrs['username']) | models.Q(email=attrs['email'])).exists():
-            raise serializers.ValidationError("Username already exists")
-        
+            raise serializers.ValidationError(
+                "At least one field must be updated")
+        if  CustomUser.objects.filter(
+            models.Q(username=attrs.get('username')) | models.Q(email=attrs.get('email'))
+            ).exists():
+            raise serializers.ValidationError("Username or email already exists")
+
         return super().validate(attrs)
 
 
@@ -83,19 +83,20 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         )
 
         self.fields['username_or_email'] = serializers.CharField(
-            write_only = True,
-            required = True,
-            label = 'Username or Email'
+            write_only=True,
+            required=True,
+            label='Username or Email'
         )
-
 
     def validate(self, attrs):
         username_or_email = attrs.get(self.username_field)
         password = attrs.get('password')
         if not username_or_email or not password:
-            raise serializers.ValidationError("Both username/email and password are required")
+            raise serializers.ValidationError(
+                "Both username/email and password are required")
         user = CustomUser.objects.filter(
-            models.Q(username=username_or_email) | models.Q(email=username_or_email)
+            models.Q(username=username_or_email) | models.Q(
+                email=username_or_email)
         ).first()
 
         if user is None or not user.check_password(password):
@@ -108,7 +109,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         attrs['username'] = user.username
         data = super().validate(attrs)
 
-        data['user'] = UserSerializer(user).data #type:ignore
+        data['user'] = UserSerializer(user).data  # type:ignore
         return data
 
 
@@ -117,7 +118,7 @@ class LogoutSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         self.token = attrs['refresh']
-        return attrs 
+        return attrs
 
     def save(self, **kwargs):
         try:

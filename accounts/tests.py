@@ -86,7 +86,8 @@ class UserViewTests(APITestCase):
         self.register_url = reverse('register')
         self.login_url = reverse('login')
         self.logout_url = reverse('logout')
-        self.profile_url = reverse('edit_profile')
+        self.profile_edit_url = reverse('edit_profile')
+        self.profile_url = reverse('profile')
 
         self.valid_user_data = {
             'username': 'testuser',
@@ -128,6 +129,13 @@ class UserViewTests(APITestCase):
             username='existinguser',
             email='existing@example.com',
             password='SecurePass123!'
+        )
+        self.user = self.existing_user
+        self.token = RefreshToken.for_user(self.user)
+
+    def authenticate(self):
+        self.client.credentials( #type:ignore
+            HTTP_AUTHORIZATION = f"Bearer {self.token.access_token}"
         )
 
     def test_user_registration_success(self):
@@ -207,4 +215,63 @@ class UserViewTests(APITestCase):
         self.assertIn('refresh', response2.data['data'])  # type:ignore
         self.assertEqual(response2.data['data']['user']['username'], self.existing_user.username) #type:ignore
 
-    
+    def test_user_login_with_invalid_credentials(self):
+        """Test user login with invalid credentials"""
+        """Test user login with valid credentials."""
+        response = self.client.post(
+            self.login_url,
+            {
+                'username_or_email': 'wrongperson',
+                'password': 'SecurePass123!'
+            },
+            format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_logout(self):
+        """Test user logout"""
+        self.authenticate()
+        response = self.client.post(
+            self.logout_url,
+            {
+                'refresh': "lol-just-kidding"
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        response = self.client.post(
+            self.logout_url,
+            {
+                'refresh':str(self.token) 
+            },
+            format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        response = self.client.post(
+            self.logout_url,
+            {}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_user(self):
+        self.authenticate()
+
+        response = self.client.put(
+            self.profile_edit_url,
+            {
+               'username': "ichigo"
+            },
+            format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual("ichigo", response.data['data']['username']) #type:ignore
+
+    def test_get_user_profile(self):
+        self.authenticate()
+        response = self.client.get(
+            self.profile_url 
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual("existinguser", response.data['data']['username']) #type:ignore
