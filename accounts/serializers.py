@@ -35,13 +35,13 @@ class UserCreationSerializer(ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Passwords don't match")
+        attrs['password'] = self._validate_password(attrs['password'])
         return super().validate(attrs)
 
     def create(self, validated_data: dict):
-        validated_data['is_active'] = False
+        # validated_data['is_active'] = False
         password = validated_data.pop('password_confirm')
         user = CustomUser.objects.create_user(
-            password=password,
             **validated_data
         )
         return user
@@ -76,12 +76,18 @@ class UserSerializer(ModelSerializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = 'username_or_email'
 
-    def __init_(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['username_or_email'] = serializers.CharField(
             write_only=True, required=True, label='Username or Email'
         )
-        del self.fields['username']
+
+        self.fields['username_or_email'] = serializers.CharField(
+            write_only = True,
+            required = True,
+            label = 'Username or Email'
+        )
+
 
     def validate(self, attrs):
         username_or_email = attrs.get(self.username_field)
@@ -98,6 +104,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not user.is_active:
             raise serializers.ValidationError("User account is inactive")
 
+        self.username_field = 'username'
         attrs['username'] = user.username
         data = super().validate(attrs)
 

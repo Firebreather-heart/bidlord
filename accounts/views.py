@@ -50,7 +50,7 @@ class RegistrationAPIView(APIView):
         logger.info(
             f"Registration attempt from IP: {get_client_ip(request)}"
         )
-        serializer = UserCreationSerializer(request.data)
+        serializer = UserCreationSerializer(data = request.data)
 
         if serializer.is_valid():
             user = serializer.save()
@@ -73,7 +73,7 @@ class RegistrationAPIView(APIView):
                 message = "Registration Failed"
             )
 
-class LoginView(APIView):
+class LoginAPIView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle]
 
@@ -93,7 +93,7 @@ class LoginView(APIView):
         logger.info(
             f'login attempt for {client_ip}'
         )
-        login_serializer = CustomTokenObtainPairSerializer(request.data)
+        login_serializer = CustomTokenObtainPairSerializer(data = request.data)
         if login_serializer.is_valid():
             try:
                 tokens = login_serializer.validated_data
@@ -110,7 +110,7 @@ class LoginView(APIView):
                     f"Unexpected error during login", exc_info=True
                 )
                 return CustomResponse.internal_server_error(
-
+                    message=f"{e}"
                 )
         else:
             logger.warning(
@@ -122,7 +122,7 @@ class LoginView(APIView):
 
 
 
-class LogoutView(APIView):
+class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -138,7 +138,7 @@ class LogoutView(APIView):
         tags=['Authentication']
     )
     def post(self, request):
-        serializer = LogoutSerializer(request.data)
+        serializer = LogoutSerializer(data = request.data)
         if serializer.is_valid():
             try:
                 serializer.save()
