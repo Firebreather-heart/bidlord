@@ -3,15 +3,13 @@ import uuid
 from django.db import models
 from django.contrib.auth import get_user_model
 
+from storage.size_adapters import get_size_adapter
+
+from .managers import ActiveAuctionManager, ObjectManager
 
 User = get_user_model()
 
 # Create your models here.
-
-
-class ObjectManager(models.Manager):
-    def get_queryset(self) -> models.QuerySet:
-        return super().get_queryset().filter(is_deleted=False, is_archived=False)
 
 
 class Currency(models.TextChoices):
@@ -37,10 +35,16 @@ class UUIDModel(models.Model):
     class Meta:
         abstract = True
 
+    def delete(self, *args, **kwargs):
+        """Soft delete the model instance."""
+        self.is_deleted = True
+        self.save(*args, **kwargs)
+
 
 class AuctionItemImage(UUIDModel):
     # Media should seriously be handled by #cloudinary or the like, so nothing beyond this will be provided
     image = models.ImageField(upload_to='/auction_images', )
+    size = models.BigIntegerField(default=0)
     creator = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='created_auction_item_images')
     is_deleted = models.BooleanField(default=False)
@@ -50,6 +54,16 @@ class AuctionItemImage(UUIDModel):
 
     def get_url(self):
         return self.image.url
+    
+    def soft_delete(self):
+        self.is_deleted = True 
+        self.save()
+
+    def save(self, *args, **kwargs):
+        if not self.size and self.image:
+            adapter = get_size_adapter(self.image.storage)
+            self.size = adapter.get_size(self.image)
+        super().save(*args, **kwargs)
 
 
 class AuctionItem(TimeStampedModel, UUIDModel):
@@ -82,24 +96,22 @@ class AuctionItem(TimeStampedModel, UUIDModel):
         return super().save(*args, **kwargs)
 
 
-class ActiveAuctionManager(models.Manager):
-    def get_queryset(self) -> models.QuerySet:
-        return super().get_queryset().filter(ongoing=True)
-
-
 class Auction(TimeStampedModel, UUIDModel):
+    """Auctions are system created, not user created, based on the time specified on items"""
     item_for_sale = models.OneToOneField(
         'AuctionItem', on_delete=models.CASCADE, related_name='auction')
     current_price = models.DecimalField(max_digits=30, decimal_places=2)
     ongoing = models.BooleanField(default=True)
     active_auctions = ActiveAuctionManager()
+    winner = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True,)
 
     def __str__(self) -> str:
         return f"Auction for {self.item_for_sale}"
 
 
 class Bid(TimeStampedModel, UUIDModel):
-    placed_by = models.ForeignKey(
+    creator = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="bids_placed")
     auction = models.ForeignKey(
         'Auction', on_delete=models.CASCADE, related_name="active_bids")
@@ -109,4 +121,4 @@ class Bid(TimeStampedModel, UUIDModel):
     # I won't add a currency field, no point in bidding with a different currency
 
     def __str__(self) -> str:
-        return f"Bid placed on Auction {self.auction.id} by {self.placed_by} ({self.amount})"
+        return f"Bid placed on Auction {self.auction.id} by {self.creator} ({self.amount})"

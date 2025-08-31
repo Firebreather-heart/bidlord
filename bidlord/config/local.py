@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'channels',
     'drf_spectacular',
     'accounts.apps.AccountsConfig',
+    'auction.apps.AuctionConfig',
 ]
 
 MIDDLEWARE = [
