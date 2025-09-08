@@ -1,4 +1,4 @@
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiExample,OpenApiRequest, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, OpenApiExample, OpenApiRequest, extend_schema
 from drf_spectacular.types import OpenApiTypes
 from rest_framework import status
 from .serializers import (
@@ -262,5 +262,56 @@ def auction_item_image_delete_doc():
     )
 
 
+def auction_list_and_detail_doc():
+    return extend_schema(
+        operation_id="list_or_get_auctions",
+        summary="List or get live/closed auctions",
+        description="Retrieve a list of auctions or a single auction. Use query parameters to filter results.",
+        parameters=[
+            OpenApiParameter(
+                name='live', type=OpenApiTypes.BOOL,
+                description="Set to 'true' for live auctions (default), 'false' for closed auctions.",
+                required=False, location=OpenApiParameter.QUERY
+            ),
+            OpenApiParameter(
+                name='auction_id', type=OpenApiTypes.UUID,
+                description="Provide an ID to fetch a single auction.",
+                required=False, location=OpenApiParameter.QUERY
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(description="Successfully retrieved auction(s)."),
+            404: OpenApiResponse(description="Auction not found.")
+        },
+        tags=['Auctions']
+    )
+
+
+def place_bid_doc():
+    return extend_schema(
+        operation_id="place_bid_on_auction",
+        summary="Place a bid on an auction",
+        description="Submits a bid for an active auction. The request is queued and processed asynchronously.",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'amount': {'type': 'number', 'example': 6500.50}
+                },
+                'required': ['amount']
+            }
+        },
+        responses={
+            202: OpenApiResponse(description="Bid received and is being processed."),
+            400: OpenApiResponse(description="Invalid bid amount."),
+            401: OpenApiResponse(description="Authentication required."),
+            404: OpenApiResponse(description="Auction not found or not active.")
+        },
+        tags=['Bids']
+    )
+
+
 __all__ = ['auction_item_create_doc', 'auction_item_detail_doc',
-           'auction_item_list_doc', 'auction_item_edit_doc', 'auction_item_delete_doc', 'auction_item_image_create_doc', 'auction_item_image_list_doc', 'auction_item_image_delete_doc']
+           'auction_item_list_doc', 'auction_item_edit_doc', 'auction_item_delete_doc', 'auction_item_image_create_doc', 'auction_item_image_list_doc', 'auction_item_image_delete_doc',
+           'auction_list_and_detail_doc', 'place_bid_doc',
+           ]

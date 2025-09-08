@@ -179,7 +179,11 @@ CELERY_BEAT_SCHEDULE = {
     'create-auctions-from-cache-every-minute': {
         'task': 'create_pending_auctions_from_cache',
         'schedule': crontab(minute='*'),  
-    }
+    },
+    'close-finished-auctions': {
+        'task': 'close_finished_auctions',
+        'schedule': crontab(minute='*'),
+    },
 }
 
 CACHES = {

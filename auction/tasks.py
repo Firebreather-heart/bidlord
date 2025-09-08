@@ -52,10 +52,11 @@ def create_pending_auctions_from_cache():
     logger.info(f"Total pending auctions created: {created_count}")
     return f"Total pending auctions created: {created_count}"
 
+
 @shared_task(name='process_bid', bind=True, max_retries=3, default_retry_delay=5)
 def process_bid(self, user_id, auction_id, amount):
     """Processes a single bid."""
-    lock_key = f"acution_lock:{auction_id}"
+    lock_key = f"auction_lock:{auction_id}"
     lock_timeout = 10
 
     try:
@@ -82,7 +83,7 @@ def process_bid(self, user_id, auction_id, amount):
 
                 bid = Bid.objects.create(
                     auction = auction,
-                    creator = user_id,
+                    creator_id = user_id,
                     amount = amount
                 )
                 logger.info(f"Bid {bid.id} placed on auction {auction.id} by user {user_id} for amount {amount}.")
@@ -115,3 +116,37 @@ def process_bid(self, user_id, auction_id, amount):
             return "Failed to process bid after multiple attempts."
     return "Bid processed successfully."
 
+
+@shared_task(name='close_finished_auctions')
+def close_finished_auctions():
+    now = timezone.now()
+    auctions_to_close = Auction.objects.filter(
+        ongoing=True,
+        item_for_sale__auction_end_date__lt = now
+    )
+    closed_count = 0
+    for auction in auctions_to_close:
+        winning_bid = auction.active_bids.order_by('amount', 'created_at').first() #type:ignore
+
+        auction.ongoing = False
+        if winning_bid:
+            auction.winner = winning_bid.creator
+
+        auction.save(update_fields=['ongoing', 'winner'])
+        closed_count += 1
+        logger.info(f"Closed auction {auction.id}. Winner: {auction.winner}")
+        
+        channel_layer = get_channel_layer()
+        group_name = f"auction_{auction.id}"
+        async_to_sync(channel_layer.group_send)( # type: ignore
+            group_name,
+            {
+                "type": "auction.closed", 
+                "message": {
+                    "final_price": f"{auction.current_price:.2f}",
+                    "winner": auction.winner.username if auction.winner else "No winner",
+                }
+            }
+        )
+
+    return f"Closed {closed_count} auctions."

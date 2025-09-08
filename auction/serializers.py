@@ -208,7 +208,7 @@ class ClosedAuctionListSerializer(serializers.ModelSerializer):
 
 
 class BidSerializer(serializers.ModelSerializer):
-    placed_by = UserSerializer()
+    creator = UserSerializer()
 
     class Meta:
         model = Bid

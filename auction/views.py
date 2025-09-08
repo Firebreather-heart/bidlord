@@ -162,7 +162,8 @@ class AuctionItemImagesAPIView(APIView):
 
     @auction_item_image_list_doc()
     def get(self, request, auction_id):
-        images = AuctionItem(id=auction_id).images.all()
+        auction_item = get_object_or_404(AuctionItem, id=auction_id)
+        images = auction_item.images.all()
         return CustomResponse.success(
             data=AuctionItemImageSerializer(images, many=True)
         )
@@ -227,6 +228,7 @@ class AuctionAPIView(PaginationMixin, APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle] 
 
+    @auction_list_and_detail_doc()
     def get(self, request,):
         live = request.GET.get('live', 'true').lower() == 'true' #defaults to `true`
         auction_id = request.GET.get('auction_id')
@@ -288,6 +290,7 @@ class PlaceBidAPIView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [UserRateThrottle]
 
+    @place_bid_doc()
     def post(self, request, auction_id):
         try:
             amount = request.data.get('amount')

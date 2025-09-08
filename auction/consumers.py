@@ -27,5 +27,5 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         message = event['mesage']
         await self.send(text_data=json.dumps({
             'type': 'auction_update',
-            'data':'message'
+            'data':message
         }))
