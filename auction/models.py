@@ -1,13 +1,16 @@
 import uuid
-
+import logging
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.cache import cache 
+from django.dispatch import receiver
 
 from storage.size_adapters import get_size_adapter
 
 from .managers import ActiveAuctionManager, ObjectManager
 
 User = get_user_model()
+logger = logging.getLogger('auction')
 
 # Create your models here.
 
@@ -93,7 +96,14 @@ class AuctionItem(TimeStampedModel, UUIDModel):
     def save(self, *args, **kwargs):
         if not self.id:
             self.active_price = self.initial_price
-        return super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
+        try:
+            redis_key = "auction_schedule"
+            member = self.id
+            score = self.auction_start_date.timestamp()
+            cache.client.get_client().zadd(redis_key, {member: score})  # type:ignore
+        except Exception as e:
+            logger.error(f"Error adding auction item {self.id} to Redis sorted set: {e}")
 
 
 class Auction(TimeStampedModel, UUIDModel):

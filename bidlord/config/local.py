@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from datetime import timedelta
 import os
 from pathlib import Path
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -159,14 +160,37 @@ WHITENOISE_AUTOREFRESH = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Celery Configuration
-CELERY_BROKER_URL = os.environ.get(
-    'CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get(
-    'CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+CELERY_BROKER_TYPE = os.environ.get('CELERY_BROKER_TYPE', 'redis').lower()
+if CELERY_BROKER_TYPE == 'rabbitmq':
+    CELERY_BROKER_URL = os.environ.get(
+        'CELERY_BROKER_URL', 'amqp://guest:guest@localhost:5672//')
+else:
+    CELERY_BROKER_URL = os.environ.get(
+        'CELERY_BROKER_URL', 'redis://localhost:6379/0')
+    CELERY_RESULT_BACKEND = os.environ.get(
+        'CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+CELERY_BEAT_SCHEDULE = {
+    'create-auctions-from-cache-every-minute': {
+        'task': 'create_pending_auctions_from_cache',
+        'schedule': crontab(minute='*'),  
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1", 
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 
 # Channels Configuration
 CHANNEL_LAYERS = {

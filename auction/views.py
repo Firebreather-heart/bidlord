@@ -17,6 +17,16 @@ from utils.responses import CustomResponse
 from utils.permissions import IsCreatorOrReadOnly
 from utils.paginators import PaginationMixin
 
+
+from .docs import *
+
+from .models import (
+    Auction,
+    AuctionItem,
+    AuctionItemImage,
+    Bid
+)
+
 from .serializers import (
     AuctionItemImageCreateSerializer,
     AuctionItemImageSerializer,
@@ -31,14 +41,7 @@ from .serializers import (
     AuctionListSerializer,
 )
 
-from .models import (
-    Auction,
-    AuctionItem,
-    AuctionItemImage,
-    Bid
-)
-
-from .docs import *
+from .tasks import process_bid
 
 logger = logging.getLogger('auction')
 
@@ -276,3 +279,17 @@ class AuctionAPIView(PaginationMixin, APIView):
                 auctions_serializer.data[:10]
             )
         return CustomResponse.bad_request()
+
+
+class PlaceBidAPIView(APIView):
+    """
+    Accepts a bid from an authenticated user and queues it for processing
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def post(self, request, auction_id):
+        try:
+            amount = request.data.get('amount')
+        except:
+            pass
