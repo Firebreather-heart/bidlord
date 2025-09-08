@@ -291,5 +291,18 @@ class PlaceBidAPIView(APIView):
     def post(self, request, auction_id):
         try:
             amount = request.data.get('amount')
-        except:
-            pass
+            if not isinstance(amount, (int, float)) or amount <= 0:
+                return CustomResponse.bad_request("A valid bid amount is required")
+            
+            process_bid.delay(
+                user_id = str(request.user.id),
+                auction_id = str(auction_id),
+                amount = float(amount)
+            ) # type: ignore
+            return CustomResponse.success(
+                message="Your bid has been received and is being processed",
+                status = 202
+            )
+        except Exception as e:
+            logger.error(f'Error queueing bid for auction {auction_id}: {e}', exc_info=True)
+            return CustomResponse.internal_server_error("An error occured while placing your bid")

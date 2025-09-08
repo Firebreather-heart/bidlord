@@ -11,6 +11,7 @@ import os
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
+import auction.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bidlord.config.local')
 
@@ -21,9 +22,9 @@ django_asgi_app = get_asgi_application()
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
     # Add WebSocket routing here when you create consumers
-    # "websocket": AuthMiddlewareStack(
-    #     URLRouter([
-    #         # WebSocket URL patterns will go here
-    #     ])
-    # ),
+    "websocket": AuthMiddlewareStack(
+        URLRouter([
+           auction.routing.websocket_urlpatterns
+        ])
+    ),
 })

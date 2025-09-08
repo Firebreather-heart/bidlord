@@ -5,8 +5,8 @@ from rest_framework.response import Response
 class CustomResponse:
 
     @staticmethod
-    def success(data=None, message="Success"):
-        """Return 200 OK"""
+    def success(data=None, message="Success", status=200):
+        """Return 200 OK or another specified code"""
         response_data = {"message": message}
         if data is not None:
             response_data["data"] = data

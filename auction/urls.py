@@ -12,5 +12,6 @@ urlpatterns = [
          name='update_delete_auction_item'),
     path('items/images/<uuid:auction_id>/',
          views.AuctionItemImagesAPIView.as_view(), name='list_create_delete_auction_item_images'),
-    path('', views.AuctionAPIView.as_view(), name="auction_view")
+    path('', views.AuctionAPIView.as_view(), name="auction_view"),
+    path('auctions/<uuid:auction_id>/bid', views.PlaceBidAPIView.as_view(), name='place_bid'),
 ]
