@@ -22,9 +22,13 @@ from .serializers import (
     AuctionItemImageSerializer,
     AuctionItemCreateSerializer,
     AuctionSerializer,
+    ClosedAuctionSerializer,
     AuctionItemSerializer,
     AuctionItemCreateSerializer,
     BidSerializer,
+    AuctionItemUpdateSerializer,
+    ClosedAuctionListSerializer,
+    AuctionListSerializer,
 )
 
 from .models import (
@@ -49,7 +53,7 @@ class AuctionItemListAPIView(PaginationMixin, APIView):
     def get(self, request, *args, **kwargs):
         auction_items = AuctionItem.available_items.all().select_related('creator').prefetch_related(
             Prefetch('images', queryset=AuctionItemImage.available_images.all())
-        )
+        ).order_by('-created_at')
         auction_item_serializer = AuctionItemSerializer(
             auction_items, many=True)
         page, paginator = self.paginate_queryset(
@@ -64,7 +68,7 @@ class AuctionItemListAPIView(PaginationMixin, APIView):
                 data=paginated_data
             )
         return CustomResponse.success(
-            data=auction_item_serializer.data,
+            data=auction_item_serializer.data[:10],
         )
 
 
@@ -86,14 +90,14 @@ class AuctionItemDetailAPIView(APIView):
             )
 
 
-class AuctionItemCreateUpdateDeleteAPIView(APIView):
-    permission_classes = [IsAuthenticated, IsCreatorOrReadOnly]
+class AuctionItemCreateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @auction_item_create_doc()
     def post(self, request):
-        serializer = AuctionItemCreateSerializer(request.data)
+        serializer = AuctionItemCreateSerializer(data=request.data)
         if serializer.is_valid():
             with transaction.atomic():
                 auction_item = serializer.save(creator=request.user)
@@ -101,12 +105,18 @@ class AuctionItemCreateUpdateDeleteAPIView(APIView):
                     f'{request.user} added auction item {auction_item}')
             return CustomResponse.created(data=AuctionItemSerializer(auction_item).data)
         else:
-            return CustomResponse.bad_request(errors=serializer.error_messages)
+            return CustomResponse.bad_request(errors=serializer.errors)
+
+
+class AuctionItemUpdateDeleteAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsCreatorOrReadOnly]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @auction_item_edit_doc()
     def put(self, request, item_id):
         item_instance = get_object_or_404(AuctionItem, id=item_id)
-        item_serializer = AuctionItemSerializer(
+        item_serializer = AuctionItemUpdateSerializer(
             item_instance, data=request.data, partial=True)
         if item_serializer.is_valid():
             item_serializer.save()
@@ -207,3 +217,62 @@ class AuctionItemImagesAPIView(APIView):
                 f"An error occured when trying to delete images: {e}"
             )
             return CustomResponse.internal_server_error("An unexpected error has occurred")
+
+
+class AuctionAPIView(PaginationMixin, APIView):
+    """This endpoint provides you a view of current and past auctions"""
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle] 
+
+    def get(self, request,):
+        live = request.GET.get('live', 'true').lower() == 'true' #defaults to `true`
+        auction_id = request.GET.get('auction_id')
+        if auction_id and live:
+            auction = get_object_or_404(Auction, id=auction_id)
+            serializer = AuctionSerializer(auction)
+            return CustomResponse.success(
+                serializer.data 
+            )
+        elif auction_id and not live:
+            auction = get_object_or_404(Auction, id=auction_id)
+            serializer = ClosedAuctionSerializer(auction)
+            return CustomResponse.success(
+                serializer.data
+            )
+        elif not auction_id and live:
+            auctions = Auction.active_auctions.all()
+            auctions_serializer = AuctionListSerializer(auctions, many=True)
+            page, paginator = self.paginate_queryset(
+                auctions_serializer, request
+            )
+            if page is not None:
+                auctions_serializer = AuctionListSerializer(page, many=True)
+                paginated_data = self.get_paginated_response(
+                    data=auctions_serializer.data,
+                    paginator=paginator
+                )
+                return CustomResponse.success(
+                    paginated_data
+                )
+            return CustomResponse.success(
+                auctions_serializer.data[:10]
+            )
+        elif not auction_id and not live:
+            auctions = Auction.objects.filter(ongoing=False).order_by('-created_at')
+            auctions_serializer = ClosedAuctionListSerializer(auctions, many=True)
+            page, paginator = self.paginate_queryset(
+                auctions_serializer, request
+            )
+            if page is not None:
+                auctions_serializer = ClosedAuctionListSerializer(page, many=True)
+                paginated_data = self.get_paginated_response(
+                    data=auctions_serializer.data,
+                    paginator=paginator
+                )
+                return CustomResponse.success(
+                    paginated_data
+                )
+            return CustomResponse.success(
+                auctions_serializer.data[:10]
+            )
+        return CustomResponse.bad_request()

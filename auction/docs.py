@@ -4,12 +4,14 @@ from rest_framework import status
 from .serializers import (
     AuctionItemImageCreateSerializer,
     AuctionItemSerializer,
-    AuctionItemImageSerializer
+    AuctionItemImageSerializer,
+    AuctionItemUpdateSerializer
 )
 
 
 def auction_item_create_doc():
     return extend_schema(
+        operation_id="create_auction_item",
         summary="Create auction item",
         description="Create a new auction item with images. Supports multipart form data for file uploads.",
         request={
@@ -55,24 +57,26 @@ def auction_item_create_doc():
             ),
             401: OpenApiResponse(description="Authentication required")
         },
-        tags=['Auction Items']
+        tags=['Auctions']
     )
 
 
 def auction_item_detail_doc():
     return extend_schema(
+        operation_id="get_auction_item_detail",
         summary="Get auction item details",
         description="Retrieve detailed information about a specific auction item including images and bid history.",
         responses={
             200: AuctionItemSerializer,
             404: OpenApiResponse(description="Auction item not found")
         },
-        tags=['Auction Items']
+        tags=['Auctions']
     )
 
 
 def auction_item_list_doc():
     return extend_schema(
+        operation_id="list_auction_items",
         summary="List auction items",
         description="Get a list of all auction items",
         responses={
@@ -114,19 +118,20 @@ def auction_item_list_doc():
                 ]
             )
         },
-        tags=['Auction Items']
+        tags=['Auctions']
     )
 
 
 def auction_item_edit_doc():
     return extend_schema(
+        operation_id="edit_auction_item",
         summary="edit the details of an auction item",
         description="This endpoint allows you to change the details of an auction item",
-        request=AuctionItemSerializer,
+        request=AuctionItemUpdateSerializer,
         responses={
             200: OpenApiResponse(
-                response=AuctionItemSerializer,
-                description="Auction item created successfully"
+                response=AuctionItemUpdateSerializer,
+                description="Auction item edited successfully"
             ),
             400: OpenApiResponse(
                 description="Validation error",
@@ -139,19 +144,20 @@ def auction_item_edit_doc():
                             "errors": {
                                 "item_name": ["This field is required."],
                                 "initial_price": ["Ensure this value is greater than 0."],
-                                "images": ["Maximum 10 images allowed"]
                             }
                         }
                     )
                 ]
             ),
             401: OpenApiResponse(description="Authentication required")
-        }
+        },
+        tags=['Auctions']
     )
 
 
 def auction_item_delete_doc():
     return extend_schema(
+        operation_id="delete_auction_item",
         summary="Delete an auction item",
         description="This endpoint allows you to delete an auction item along with any related data",
         parameters=[OpenApiParameter(
@@ -159,16 +165,18 @@ def auction_item_delete_doc():
         )],
         responses={
             204: OpenApiResponse(
-                response=status.HTTP_204_NO_CONTENT
+                description="No Content, item deleted successfully"
             ),
             401: OpenApiResponse(description="Unauthenticated"),
             403: OpenApiResponse(description="You can't delete an item you didn't create")
-        }
+        },
+        tags=['Auctions']
     )
 
 
 def auction_item_image_list_doc():
     return extend_schema(
+        operation_id="list_auction_item_images",
         summary="Get a list of the images associated with the specified auction ",
         parameters=[
             OpenApiParameter(
@@ -184,12 +192,14 @@ def auction_item_image_list_doc():
             404: OpenApiResponse(
                 description="Auction item not found"
             )
-        }
+        },
+        tags=['Auctions']
     )
 
 
 def auction_item_image_create_doc():
     return extend_schema(
+        operation_id="add_auction_item_image",
         summary="Add an image to an auction item, the only ways to manage the images are to add or delete them",
         parameters=[
             OpenApiParameter(
@@ -213,12 +223,14 @@ def auction_item_image_create_doc():
             404: OpenApiResponse(
                 description="Auction item not found"
             )
-        }
+        },
+        tags=['Auctions']
     )
 
 
 def auction_item_image_delete_doc():
     return extend_schema(
+        operation_id="delete_auction_item_image",
         summary="Delete an image(s) associated with the specified auction item",
         parameters=[
             OpenApiParameter(
@@ -233,8 +245,7 @@ def auction_item_image_delete_doc():
             }
         ),
         responses={
-            201: OpenApiResponse(
-                response=AuctionItemImageSerializer,
+            200: OpenApiResponse(
                 description=" Deleted <no of images> images"
             ),
             400: OpenApiResponse(
@@ -246,7 +257,8 @@ def auction_item_image_delete_doc():
             404: OpenApiResponse(
                 description="Auction item not found"
             )
-        }
+        },
+        tags=['Auctions']
     )
 
 

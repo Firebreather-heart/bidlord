@@ -1,7 +1,8 @@
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from channels.db import database_sync_to_async
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 
 from .mixins import ArchiveProtectionMixin
 
@@ -20,22 +21,21 @@ class AuctionItemImageCreateSerializer(serializers.Serializer):
     )
 
 
-
 class AuctionItemImageSerializer(ArchiveProtectionMixin, serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     creator = UserSerializer()
 
     class Meta:
         model = AuctionItemImage
-        fields = ['id', 'url']
-        read_only_fields = ['id', 'creator',  'created_at', 'updated_at']
+        fields = ['id', 'url', 'creator',]
+        read_only_fields = ['id', 'creator',]
 
-    def get_url(self, obj):
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_url(self, obj) -> str | None:
         request = self.context.get('request')
         if obj.image and request:
             return request.build_absolute_uri(obj.image.url)
         return None
-    
 
 
 class AuctionItemCreateSerializer(serializers.ModelSerializer):
@@ -89,15 +89,16 @@ class AuctionItemCreateSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise ValidationError("Initial price must be greater than zero")
         return value
-    
 
     def validate(self, attrs):
         if attrs.get('images'):
             attrs['images'] = self._validate_images(attrs['images'])
         if attrs.get('auction_end_date'):
-            attrs['auction_end_date'] = self._validate_auction_end_date(attrs['auction_end_date'])
+            attrs['auction_end_date'] = self._validate_auction_end_date(
+                attrs['auction_end_date'])
         if attrs.get('initial_price'):
-            attrs['initial_price'] = self._validate_initial_price(attrs['initial_price'])
+            attrs['initial_price'] = self._validate_initial_price(
+                attrs['initial_price'])
         return super().validate(attrs)
 
     def create(self, validated_data):
@@ -106,7 +107,8 @@ class AuctionItemCreateSerializer(serializers.ModelSerializer):
         auction_item = AuctionItem.objects.create(**validated_data)
 
         for file in images_data:
-            image = AuctionItemImage.objects.create(image=file, creator=self.context['request'].user)
+            image = AuctionItemImage.objects.create(
+                image=file, creator=self.context['request'].user)
             auction_item.images.add(image)
 
         return auction_item
@@ -128,8 +130,59 @@ class AuctionItemSerializer(ArchiveProtectionMixin, serializers.ModelSerializer)
         return super().update(instance, validated_data)
 
 
+class AuctionItemUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AuctionItem
+        fields = [
+            'item_name', 'details', 'initial_price', 'price_currency',
+            'auction_start_date', 'auction_end_date'
+        ]
+        extra_kwargs = {
+            'item_name': {'help_text': 'Name of the auction item'},
+            'details': {'help_text': 'Detailed description of the item'},
+            'price_currency': {'help_text': 'Dollars | Pounds | Naira | Euro'},
+            'initial_price': {'help_text': 'Starting bid price'},
+            'auction_start_date': {'help_text': 'When the auction starts (ISO format)'},
+            'auction_end_date': {'help_text': 'When the auction ends, at least 30 mins after (ISO format)'},
+        }
+
+    def _validate_auction_end_date(self, value):
+        start_date = self.initial_data.get('auction_start_date')  # type:ignore
+        if start_date:
+            from dateutil import parser
+            start_datetime = parser.parse(start_date) if isinstance(
+                start_date, str) else start_date
+            interval = value - start_datetime
+            if (value <= start_datetime) or (interval.seconds < 1800):
+                raise ValidationError(
+                    "End date-time must be set at least 30 mins after start")
+            return value
+
+    def _validate_initial_price(self, value):
+        if value <= 0:
+            raise ValidationError("Initial price must be greater than zero")
+        return value
+
+    def validate(self, attrs):
+        if attrs.get('auction_end_date'):
+            attrs['auction_end_date'] = self._validate_auction_end_date(
+                attrs['auction_end_date'])
+        if attrs.get('initial_price'):
+            attrs['initial_price'] = self._validate_initial_price(
+                attrs['initial_price'])
+        return super().validate(attrs)
+
+
 class AuctionSerializer(serializers.ModelSerializer):
     item_for_sale = AuctionItemSerializer(read_only=True)
+
+    class Meta:
+        model = Auction
+        fields = ['item_for_sale', 'current_price', 'ongoing']
+        read_only_fields = '__all__'
+
+
+class AuctionListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Auction
@@ -146,9 +199,16 @@ class ClosedAuctionSerializer(serializers.ModelSerializer):
         read_only_fields = '__all__'
 
 
+class ClosedAuctionListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Auction
+        fields = ['item_for_sale', 'current_price', 'winner']
+        read_only_fields = '__all__'
+
+
 class BidSerializer(serializers.ModelSerializer):
     placed_by = UserSerializer()
-    auction = AuctionSerializer()
 
     class Meta:
         model = Bid

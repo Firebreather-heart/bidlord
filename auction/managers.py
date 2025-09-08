@@ -3,7 +3,7 @@ from django.db import models
 
 class ActiveAuctionManager(models.Manager):
     def get_queryset(self) -> models.QuerySet:
-        return super().get_queryset().filter(ongoing=True)
+        return super().get_queryset().filter(ongoing=True).order_by('-created_at')
 
 
 class ObjectManager(models.Manager):
