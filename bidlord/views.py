@@ -15,3 +15,14 @@ class HomeView(TemplateView):
             'description': 'A comprehensive bidding platform API built with Django REST Framework',
         })
         return context
+
+
+class WebSocketDocsView(TemplateView):
+    """
+    Renders the dedicated documentation page for WebSocket APIs.
+    """
+    template_name = 'websocket_docs.html'
+    extra_context = {
+        'title': 'WebSocket API Documentation - BidLord',
+        'description': 'Real-time auction updates via WebSocket API',
+    }

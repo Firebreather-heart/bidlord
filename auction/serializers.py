@@ -173,21 +173,36 @@ class AuctionItemUpdateSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
 
+class BidSerializer(serializers.ModelSerializer):
+    creator = UserSerializer()
+
+    class Meta:
+        model = Bid
+        fields = '__all__'
+
+
 class AuctionSerializer(serializers.ModelSerializer):
     item_for_sale = AuctionItemSerializer(read_only=True)
+    bids = BidSerializer(many=True, read_only=True)
 
     class Meta:
         model = Auction
-        fields = ['item_for_sale', 'current_price', 'ongoing']
+        fields = ['id', 'item_for_sale', 'current_price', 'ongoing', 'bids']
         read_only_fields = '__all__'
 
 
 class AuctionListSerializer(serializers.ModelSerializer):
+    item_for_sale = AuctionItemSerializer(read_only=True)
+    bid_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Auction
-        fields = ['item_for_sale', 'current_price', 'ongoing']
+        fields = ['id', 'item_for_sale',
+                  'current_price', 'ongoing', 'bid_count']
         read_only_fields = '__all__'
+
+    def get_bid_count(self, obj):
+        return obj.bids.count()
 
 
 class ClosedAuctionSerializer(serializers.ModelSerializer):
@@ -205,11 +220,3 @@ class ClosedAuctionListSerializer(serializers.ModelSerializer):
         model = Auction
         fields = ['item_for_sale', 'current_price', 'winner']
         read_only_fields = '__all__'
-
-
-class BidSerializer(serializers.ModelSerializer):
-    creator = UserSerializer()
-
-    class Meta:
-        model = Bid
-        fields = '__all__'

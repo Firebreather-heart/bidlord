@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>BidLord - Bidding Platform API</title>
+        <title>BidLord - API Documentation Hub</title>
         {% load static %}
         <link rel="stylesheet" href="{% static 'css/style.css' %}">
     </head>
@@ -12,55 +12,69 @@
     <body>
         <div class="header">
             <div class="container">
-                <h1>🏆 BidLord API</h1>
-                <p>A comprehensive bidding platform API</p>
-                <a href="/api/docs/" class="api-docs-link">View API Documentation</a>
+                <h1>🏆 BidLord API Documentation Hub</h1>
+                <p>The central resource for developing on the BidLord platform.</p>
             </div>
         </div>
 
         <div class="container">
+            <!-- Developer Resources Links -->
+            <div class="feature-card" style="text-align: center; margin-bottom: 40px;">
+                <h3>Developer Resources</h3>
+                <p>Quickly access the specific documentation you need.</p>
+                <p>
+                    <a href="{% url 'swagger-ui' %}" target="_blank" class="api-docs-link">REST API Reference
+                        (Swagger)</a>
+                    <a href="{% url 'ws-docs' %}" target="_blank" class="api-docs-link">WebSocket API Guide</a>
+                    <a href="{% url 'redoc' %}" target="_blank" class="api-docs-link">Alternative API Reference
+                        (ReDoc)</a>
+                </p>
+            </div>
+
+            <!-- System Overview -->
+            <div class="feature-card">
+                <h3>System Overview</h3>
+                <p>BidLord is a high-performance auctioning system built with a modern Python stack. It leverages
+                    asynchronous task queues for reliability and WebSockets for real-time communication.</p>
+                <p>The core flow involves users creating <strong>Auction Items</strong>, which are then automatically
+                    converted into live <strong>Auctions</strong> by a scheduled background task. Bids are processed
+                    asynchronously to ensure the API remains responsive under high load, with real-time price updates
+                    broadcast to all connected clients.</p>
+            </div>
+
             <div class="features">
+                <!-- Core Features -->
                 <div class="feature-card">
-                    <h3><span class="status-indicator"></span>Authentication</h3>
+                    <h3><span class="status-indicator"></span>Core Features</h3>
                     <ul>
-                        <li>JWT Token Authentication</li>
-                        <li>User Registration & Login</li>
-                        <li>Token Blacklisting</li>
-                        <li>Profile Management</li>
+                        <li>Secure JWT Token Authentication</li>
+                        <li>User Registration & Profile Management</li>
+                        <li>Full CRUD for Auction Items & Images</li>
+                        <li>Scheduled, Automated Auction Creation</li>
+                        <li>Asynchronous, High-Throughput Bidding</li>
+                        <li>Real-time Price Updates via WebSockets</li>
                     </ul>
                 </div>
 
+                <!-- Technology Stack -->
                 <div class="feature-card">
-                    <h3><span class="status-indicator"></span>Bidding System</h3>
+                    <h3><span class="status-indicator"></span>Technology Stack</h3>
                     <ul>
-                        <li>Real-time Bidding (Coming Soon)</li>
-                        <li>Auction Management (Coming Soon)</li>
-                        <li>Bid History (Coming Soon)</li>
-                        <li>WebSocket Support</li>
-                    </ul>
-                </div>
-
-                <div class="feature-card">
-                    <h3><span class="status-indicator"></span>Infrastructure</h3>
-                    <ul>
-                        <li>Django REST Framework</li>
-                        <li>PostgreSQL Database</li>
-                        <li>Redis Caching</li>
-                        <li>Celery Background Tasks</li>
-                        <li>Docker Containerization</li>
+                        <li>Django & Django REST Framework</li>
+                        <li>PostgreSQL for Persistent Data</li>
+                        <li>Redis for Caching & Message Brokering</li>
+                        <li>Celery for Background Tasks & Scheduling</li>
+                        <li>Django Channels for WebSocket Support</li>
+                        <li>Docker for Containerization</li>
                     </ul>
                 </div>
             </div>
 
+            <!-- Schema Links -->
             <div class="feature-card" style="margin-top: 40px; text-align: center;">
-                <h3>API Endpoints</h3>
+                <h3>Administrative & Raw Schema</h3>
                 <p>
-                    <a href="/api/docs/" target="_blank">Swagger UI</a> |
-                    <a href="/api/redoc/" target="_blank">ReDoc</a> |
-                    <a href="/api/schema/" target="_blank">OpenAPI Schema</a>
-                </p>
-                <p>
-                    <a href="/admin/" target="_blank">Django Admin</a>
+                    <a href="{% url 'schema' %}" target="_blank">OpenAPI Schema (JSON)</a>
                 </p>
             </div>
         </div>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>WebSocket API Documentation - BidLord</title>
+        {% load static %}
+        <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    </head>
+
+    <body>
+        <div class="header">
+            <div class="container">
+                <h1>🔌 WebSocket API Documentation</h1>
+                <p>Real-time updates for the BidLord Platform</p>
+                <a href="/" class="api-docs-link">← Back to Main Docs</a>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="feature-card">
+                <h3>Connection</h3>
+                <p>To receive real-time updates for an auction, establish a WebSocket connection to the following
+                    endpoint:</p>
+                <pre><code>ws://&lt;your_domain&gt;/ws/auctions/{auction_id}/</code></pre>
+                <p>Replace <code>{auction_id}</code> with the UUID of the auction you want to subscribe to.</p>
+            </div>
+
+            <div class="feature-card">
+                <h3>Server-to-Client Messages</h3>
+                <p>Once connected, the server will push JSON messages to your client. All messages share a common
+                    structure:</p>
+                <pre><code>{
+                        "type": "message_type_name",
+                        "data": { ... }
+                        }</code></pre>
+
+                <hr style="margin: 20px 0;">
+
+                <h4>1. New Bid Update</h4>
+                <p>Sent whenever a new, valid bid is placed on the auction.</p>
+                <p><strong>Type:</strong> <code>auction.update</code></p>
+                <p><strong>Payload (`data`):</strong></p>
+                <pre><code>{
+                        "new_price": "1550.75",
+                        "currency": "Dollars",
+                        "bidder": "some_user",
+                        "timestamp": "2025-09-08T12:30:05.123Z"
+                        }</code></pre>
+
+                <hr style="margin: 20px 0;">
+
+                <h4>2. Auction Closed</h4>
+                <p>Sent when the auction's end time is reached and it is finalized.</p>
+                <p><strong>Type:</strong> <code>auction.closed</code></p>
+                <p><strong>Payload (`data`):</strong></p>
+                <pre><code>{
+                        "final_price": "2100.00",
+                        "winner": "winning_user"
+                        }</code></pre>
+            </div>
+        </div>
+    </body>
+
+</html>

@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 from drf_spectacular.views import (
     SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 )
-from .views import HomeView
+from .views import HomeView, WebSocketDocsView
 
 urlpatterns = [
     path('', HomeView.as_view(), name='home'),
@@ -32,11 +32,14 @@ urlpatterns = [
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'),
          name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('api/docs/websockets/', WebSocketDocsView.as_view(), name='ws-docs'),
 ]
 
 # Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL,
                           document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL,
+                          document_root=settings.STATIC_ROOT)
 
 

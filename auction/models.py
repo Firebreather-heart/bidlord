@@ -46,7 +46,7 @@ class UUIDModel(models.Model):
 
 class AuctionItemImage(UUIDModel):
     # Media should seriously be handled by #cloudinary or the like, so nothing beyond this will be provided
-    image = models.ImageField(upload_to='/auction_images', )
+    image = models.ImageField(upload_to='auction_images/', )
     size = models.BigIntegerField(default=0)
     creator = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='created_auction_item_images')
@@ -75,19 +75,22 @@ class AuctionItem(TimeStampedModel, UUIDModel):
     images = models.ManyToManyField(AuctionItemImage, )
     item_name = models.CharField(max_length=100)
     details = models.TextField()
-    auction_start_date = models.DateTimeField()
-    auction_end_date = models.DateTimeField()
+    auction_start_date = models.DateTimeField(db_index=True)
+    auction_end_date = models.DateTimeField(db_index=True)
     initial_price = models.DecimalField(max_digits=30, decimal_places=2)
     active_price = models.DecimalField(max_digits=30, decimal_places=2)
     price_currency = models.CharField(
         max_length=10, choices=Currency.choices, default=Currency.DOLLAR)
     available_items = ObjectManager()
-    is_deleted = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False, db_index=True)
     is_archived = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Auction Item"
         verbose_name_plural = "Auction Items"
+        indexes = [
+            models.Index(fields=['item_name'])
+        ]
 
     def __str__(self) -> str:
         return f"{self.item_name} for sale :{self.auction_start_date} -> {self.auction_end_date} \
@@ -111,7 +114,7 @@ class Auction(TimeStampedModel, UUIDModel):
     item_for_sale = models.OneToOneField(
         'AuctionItem', on_delete=models.CASCADE, related_name='auction')
     current_price = models.DecimalField(max_digits=30, decimal_places=2)
-    ongoing = models.BooleanField(default=True)
+    ongoing = models.BooleanField(default=True, db_index=True)
     active_auctions = ActiveAuctionManager()
     winner = models.ForeignKey(
         User, on_delete=models.CASCADE, null=True, blank=True,)
@@ -126,9 +129,14 @@ class Bid(TimeStampedModel, UUIDModel):
     auction = models.ForeignKey(
         'Auction', on_delete=models.CASCADE, related_name="active_bids")
     amount = models.DecimalField(max_digits=30, decimal_places=2)
-    is_deleted = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False, db_index=True)
     available_bids = ObjectManager()
     # I won't add a currency field, no point in bidding with a different currency
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['auction', '-created_at', 'amount'])
+        ]
 
     def __str__(self) -> str:
         return f"Bid placed on Auction {self.auction.id} by {self.creator} ({self.amount})"
