@@ -120,7 +120,8 @@ class AuctionItemSerializer(ArchiveProtectionMixin, serializers.ModelSerializer)
 
     class Meta:
         model = AuctionItem
-        fields = '__all__'
+        fields = ['id', 'creator', 'images', 'item_name', 'details', 'auction_start_date', 'auction_end_date',
+                  'initial_price', 'active_price', 'price_currency', 'created_at', 'updated_at']
         read_only_fields = ['id', 'creator',  'created_at', 'updated_at']
 
     def update(self, instance, validated_data):
@@ -203,6 +204,17 @@ class AuctionListSerializer(serializers.ModelSerializer):
 
     def get_bid_count(self, obj):
         return obj.bids.count()
+
+
+class AuctionItemSearchSerializer(AuctionItemSerializer):
+    """
+    Serializer for search results, adding rank and headline.
+    """
+    rank = serializers.FloatField(read_only=True)
+    headline = serializers.CharField(read_only=True)
+
+    class Meta(AuctionItemSerializer.Meta):
+        fields = AuctionItemSerializer.Meta.fields + ['rank', ]
 
 
 class ClosedAuctionSerializer(serializers.ModelSerializer):

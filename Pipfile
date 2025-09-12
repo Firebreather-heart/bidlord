@@ -17,6 +17,7 @@ channels-redis = "*"
 uvicorn = {extras = ["standard"], version = "*"}
 daphne = "*"
 whitenoise = "*"
+pillow = "*"
 
 [dev-packages]
 

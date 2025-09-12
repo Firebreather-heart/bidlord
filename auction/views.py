@@ -1,8 +1,9 @@
 import logging
 
 from django.db import transaction
-from django.db.models import Prefetch, Sum
+from django.db.models import Prefetch, Sum, F
 from django.shortcuts import get_object_or_404
+from django.contrib.postgres.search import SearchQuery, SearchRank
 
 from django.utils import timezone
 from rest_framework.views import APIView
@@ -10,7 +11,6 @@ from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.exceptions import ValidationError
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 
 
 from utils.responses import CustomResponse
@@ -34,6 +34,7 @@ from .serializers import (
     AuctionSerializer,
     ClosedAuctionSerializer,
     AuctionItemSerializer,
+    AuctionItemSearchSerializer,
     AuctionItemCreateSerializer,
     BidSerializer,
     AuctionItemUpdateSerializer,
@@ -57,8 +58,6 @@ class AuctionItemListAPIView(PaginationMixin, APIView):
         auction_items = AuctionItem.available_items.all().select_related('creator').prefetch_related(
             Prefetch('images', queryset=AuctionItemImage.available_images.all())
         ).order_by('-created_at')
-        auction_item_serializer = AuctionItemSerializer(
-            auction_items, many=True)
         page, paginator = self.paginate_queryset(
             auction_items, request)
         if page is not None:
@@ -70,10 +69,47 @@ class AuctionItemListAPIView(PaginationMixin, APIView):
             return CustomResponse.success(
                 data=paginated_data
             )
+        auction_item_serializer = AuctionItemSerializer(
+            auction_items, many=True)
         return CustomResponse.success(
             data=auction_item_serializer.data[:10],
         )
 
+
+class MasterSearchAPIView(PaginationMixin, APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle, UserRateThrottle]
+
+    @master_search_doc()  
+    def get(self, request, *args, **kwargs):
+        query_param = request.query_params.get('q', None)
+
+        if not query_param:
+            return CustomResponse.bad_request("Search query parameter 'q' is required.")
+
+        search_query = SearchQuery(
+            query_param, search_type='websearch', config='english')
+
+
+        search_results = AuctionItem.available_items.filter(
+            search_vector=search_query
+        ).annotate(
+            rank=SearchRank(F('search_vector'), search_query),
+        ).order_by('-rank')
+
+        page, paginator = self.paginate_queryset(search_results, request)
+        if page is not None:
+            serializer = AuctionItemSearchSerializer(
+                page, many=True, context={'request': request})
+            paginated_data = self.get_paginated_response(
+                data=serializer.data,
+                paginator=paginator
+            )
+            return CustomResponse.success(data=paginated_data)
+
+        serializer = AuctionItemSearchSerializer(
+            search_results, many=True, context={'request': request})
+        return CustomResponse.success(data=serializer.data)
 
 class AuctionItemDetailAPIView(APIView):
     permission_classes = [AllowAny]

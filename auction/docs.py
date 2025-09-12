@@ -5,7 +5,8 @@ from .serializers import (
     AuctionItemImageCreateSerializer,
     AuctionItemSerializer,
     AuctionItemImageSerializer,
-    AuctionItemUpdateSerializer
+    AuctionItemUpdateSerializer,
+    AuctionItemSearchSerializer
 )
 
 
@@ -311,7 +312,26 @@ def place_bid_doc():
     )
 
 
+def master_search_doc():
+    return extend_schema(
+        operation_id="master_search",
+        summary="Search for auction items",
+        description="Performs a full-text search across item names and descriptions.",
+        parameters=[
+            OpenApiParameter(
+                name='q',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='The search term.',
+                required=True,
+            ),
+        ],
+        responses={200: AuctionItemSearchSerializer(many=True)},
+        tags=['Search']
+    )
+
+
 __all__ = ['auction_item_create_doc', 'auction_item_detail_doc',
            'auction_item_list_doc', 'auction_item_edit_doc', 'auction_item_delete_doc', 'auction_item_image_create_doc', 'auction_item_image_list_doc', 'auction_item_image_delete_doc',
-           'auction_list_and_detail_doc', 'place_bid_doc',
+           'auction_list_and_detail_doc', 'place_bid_doc','master_search_doc'
            ]

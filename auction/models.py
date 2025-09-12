@@ -3,7 +3,7 @@ import logging
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.cache import cache 
-from django.dispatch import receiver
+from django.contrib.postgres.search import SearchVector, SearchVectorField
 
 from storage.size_adapters import get_size_adapter
 
@@ -81,6 +81,7 @@ class AuctionItem(TimeStampedModel, UUIDModel):
     active_price = models.DecimalField(max_digits=30, decimal_places=2)
     price_currency = models.CharField(
         max_length=10, choices=Currency.choices, default=Currency.DOLLAR)
+    search_vector = SearchVectorField(null=True, editable=False)
     available_items = ObjectManager()
     is_deleted = models.BooleanField(default=False, db_index=True)
     is_archived = models.BooleanField(default=False)

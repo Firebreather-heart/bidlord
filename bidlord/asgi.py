@@ -15,13 +15,11 @@ import auction.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bidlord.config.local')
 
-# Initialize Django ASGI application early to ensure the AppRegistry
-# is populated before importing code that may import ORM models.
+
 django_asgi_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    # Add WebSocket routing here when you create consumers
     "websocket": AuthMiddlewareStack(
         URLRouter([
            auction.routing.websocket_urlpatterns

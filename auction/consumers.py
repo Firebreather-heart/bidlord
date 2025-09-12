@@ -24,7 +24,7 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         logger.info(f"Websocket disconnected for auction {self.auction_id}")
 
     async def auction_update(self, event):
-        message = event['mesage']
+        message = event['message']
         await self.send(text_data=json.dumps({
             'type': 'auction_update',
             'data':message

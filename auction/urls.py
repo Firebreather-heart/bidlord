@@ -6,7 +6,7 @@ urlpatterns = [
          name='list_auction_item'),
     path('items/create/', views.AuctionItemCreateAPIView.as_view(),
          name="create_auction_item"),
-    path('items/<uuid:item_id>/', views.AuctionItemDetailAPIView.as_view(),
+    path('items/details/<uuid:item_id>/', views.AuctionItemDetailAPIView.as_view(),
          name='auction_item_detail'),
     path('items/<uuid:item_id>/', views.AuctionItemUpdateDeleteAPIView.as_view(),
          name='update_delete_auction_item'),

@@ -126,7 +126,7 @@ def close_finished_auctions():
     )
     closed_count = 0
     for auction in auctions_to_close:
-        winning_bid = auction.active_bids.order_by('amount', 'created_at').first() #type:ignore
+        winning_bid = auction.active_bids.order_by('-amount', 'created_at').first() #type:ignore
 
         auction.ongoing = False
         if winning_bid:
