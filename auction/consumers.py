@@ -1,12 +1,14 @@
 import json
-import logging 
+import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 logger = logging.getLogger('auction')
 
+
 class AuctionConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.auction_id = self.scope['url_route']['kwargs']['auction_id']
+        self.auction_id = self.scope.get('url_route', {}).get(
+            'kwargs', {}).get('auction_id')
         self.auction_group_name = f'auction_{self.auction_id}'
 
         await self.channel_layer.group_add(  # type: ignore
@@ -17,7 +19,7 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         logger.info(f"websocker connected for auction {self.auction_id}")
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard( # type: ignore
+        await self.channel_layer.group_discard(  # type: ignore
             self.auction_group_name,
             self.channel_name
         )
@@ -27,5 +29,12 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         message = event['message']
         await self.send(text_data=json.dumps({
             'type': 'auction_update',
-            'data':message
+            'data': message
+        }))
+
+    async def auction_closed(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps({
+            'type': 'auction_closed',
+            'data': message
         }))

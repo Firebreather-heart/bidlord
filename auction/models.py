@@ -1,5 +1,6 @@
 import uuid
 import logging
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.cache import cache 
@@ -83,6 +84,7 @@ class AuctionItem(TimeStampedModel, UUIDModel):
         max_length=10, choices=Currency.choices, default=Currency.DOLLAR)
     search_vector = SearchVectorField(null=True, editable=False)
     available_items = ObjectManager()
+    objects = models.Manager()
     is_deleted = models.BooleanField(default=False, db_index=True)
     is_archived = models.BooleanField(default=False)
 
@@ -90,7 +92,8 @@ class AuctionItem(TimeStampedModel, UUIDModel):
         verbose_name = "Auction Item"
         verbose_name_plural = "Auction Items"
         indexes = [
-            models.Index(fields=['item_name'])
+            models.Index(fields=['item_name']),
+            GinIndex(fields=['search_vector']),
         ]
 
     def __str__(self) -> str:
@@ -98,12 +101,12 @@ class AuctionItem(TimeStampedModel, UUIDModel):
               -> {self.active_price} : {self.price_currency}"
 
     def save(self, *args, **kwargs):
-        if not self.id:
+        if self._state.adding:
             self.active_price = self.initial_price
         super().save(*args, **kwargs)
         try:
             redis_key = "auction_schedule"
-            member = self.id
+            member = str(self.id)
             score = self.auction_start_date.timestamp()
             cache.client.get_client().zadd(redis_key, {member: score})  # type:ignore
         except Exception as e:
@@ -117,6 +120,7 @@ class Auction(TimeStampedModel, UUIDModel):
     current_price = models.DecimalField(max_digits=30, decimal_places=2)
     ongoing = models.BooleanField(default=True, db_index=True)
     active_auctions = ActiveAuctionManager()
+    objects = models.Manager()
     winner = models.ForeignKey(
         User, on_delete=models.CASCADE, null=True, blank=True,)
 
@@ -131,7 +135,7 @@ class Bid(TimeStampedModel, UUIDModel):
         'Auction', on_delete=models.CASCADE, related_name="active_bids")
     amount = models.DecimalField(max_digits=30, decimal_places=2)
     is_deleted = models.BooleanField(default=False, db_index=True)
-    available_bids = ObjectManager()
+    objects = models.Manager()
     # I won't add a currency field, no point in bidding with a different currency
 
     class Meta:

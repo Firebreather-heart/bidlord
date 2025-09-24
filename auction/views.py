@@ -80,7 +80,7 @@ class MasterSearchAPIView(PaginationMixin, APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle, UserRateThrottle]
 
-    @master_search_doc()  
+    @master_search_doc()
     def get(self, request, *args, **kwargs):
         query_param = request.query_params.get('q', None)
 
@@ -90,12 +90,11 @@ class MasterSearchAPIView(PaginationMixin, APIView):
         search_query = SearchQuery(
             query_param, search_type='websearch', config='english')
 
-
         search_results = AuctionItem.available_items.filter(
             search_vector=search_query
         ).annotate(
             rank=SearchRank(F('search_vector'), search_query),
-        ).order_by('-rank')
+        ).order_by('-rank', '-created_at')
 
         page, paginator = self.paginate_queryset(search_results, request)
         if page is not None:
@@ -110,6 +109,7 @@ class MasterSearchAPIView(PaginationMixin, APIView):
         serializer = AuctionItemSearchSerializer(
             search_results, many=True, context={'request': request})
         return CustomResponse.success(data=serializer.data)
+
 
 class AuctionItemDetailAPIView(APIView):
     permission_classes = [AllowAny]
@@ -175,7 +175,7 @@ class AuctionItemUpdateDeleteAPIView(APIView):
             return CustomResponse.bad_request("Cannot delete an ongoing auction")
         with transaction.atomic():
             item_instance.delete()
-            for item in item_instance.images:
+            for item in item_instance.images.all():
                 item.delete()
         return CustomResponse.no_content()
 
@@ -201,7 +201,7 @@ class AuctionItemImagesAPIView(APIView):
         auction_item = get_object_or_404(AuctionItem, id=auction_id)
         images = auction_item.images.all()
         return CustomResponse.success(
-            data=AuctionItemImageSerializer(images, many=True)
+            data=AuctionItemImageSerializer(images, many=True).data
         )
 
     @auction_item_image_create_doc()
@@ -262,17 +262,18 @@ class AuctionItemImagesAPIView(APIView):
 class AuctionAPIView(PaginationMixin, APIView):
     """This endpoint provides you a view of current and past auctions"""
     permission_classes = [AllowAny]
-    throttle_classes = [AnonRateThrottle] 
+    throttle_classes = [AnonRateThrottle]
 
     @auction_list_and_detail_doc()
     def get(self, request,):
-        live = request.GET.get('live', 'true').lower() == 'true' #defaults to `true`
+        live = request.GET.get('live', 'true').lower(
+        ) == 'true'  # defaults to `true`
         auction_id = request.GET.get('auction_id')
         if auction_id and live:
             auction = get_object_or_404(Auction, id=auction_id)
             serializer = AuctionSerializer(auction)
             return CustomResponse.success(
-                serializer.data 
+                serializer.data
             )
         elif auction_id and not live:
             auction = get_object_or_404(Auction, id=auction_id)
@@ -282,9 +283,8 @@ class AuctionAPIView(PaginationMixin, APIView):
             )
         elif not auction_id and live:
             auctions = Auction.active_auctions.all()
-            auctions_serializer = AuctionListSerializer(auctions, many=True)
             page, paginator = self.paginate_queryset(
-                auctions_serializer, request
+                auctions, request
             )
             if page is not None:
                 auctions_serializer = AuctionListSerializer(page, many=True)
@@ -296,16 +296,17 @@ class AuctionAPIView(PaginationMixin, APIView):
                     paginated_data
                 )
             return CustomResponse.success(
-                auctions_serializer.data[:10]
+                AuctionListSerializer(auctions[:10], many=True).data
             )
         elif not auction_id and not live:
-            auctions = Auction.objects.filter(ongoing=False).order_by('-created_at')
-            auctions_serializer = ClosedAuctionListSerializer(auctions, many=True)
+            auctions = Auction.objects.filter(
+                ongoing=False).order_by('-created_at')
             page, paginator = self.paginate_queryset(
-                auctions_serializer, request
+                auctions, request
             )
             if page is not None:
-                auctions_serializer = ClosedAuctionListSerializer(page, many=True)
+                auctions_serializer = ClosedAuctionListSerializer(
+                    page, many=True)
                 paginated_data = self.get_paginated_response(
                     data=auctions_serializer.data,
                     paginator=paginator
@@ -314,7 +315,7 @@ class AuctionAPIView(PaginationMixin, APIView):
                     paginated_data
                 )
             return CustomResponse.success(
-                auctions_serializer.data[:10]
+                ClosedAuctionListSerializer(auctions[:10], many=True).data
             )
         return CustomResponse.bad_request()
 
@@ -332,16 +333,17 @@ class PlaceBidAPIView(APIView):
             amount = request.data.get('amount')
             if not isinstance(amount, (int, float)) or amount <= 0:
                 return CustomResponse.bad_request("A valid bid amount is required")
-            
+
             process_bid.delay(
-                user_id = str(request.user.id),
-                auction_id = str(auction_id),
-                amount = float(amount)
-            ) # type: ignore
+                user_id=str(request.user.id),
+                auction_id=str(auction_id),
+                amount=float(amount)
+            )  # type: ignore
             return CustomResponse.success(
                 message="Your bid has been received and is being processed",
-                status = 202
+                status_code=202
             )
         except Exception as e:
-            logger.error(f'Error queueing bid for auction {auction_id}: {e}', exc_info=True)
+            logger.error(
+                f'Error queueing bid for auction {auction_id}: {e}', exc_info=True)
             return CustomResponse.internal_server_error("An error occured while placing your bid")

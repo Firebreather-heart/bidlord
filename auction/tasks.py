@@ -58,7 +58,7 @@ def process_bid(self, user_id, auction_id, amount):
     """Processes a single bid."""
     lock_key = f"auction_lock:{auction_id}"
     lock_timeout = 10
-
+ 
     try:
         with cache.lock(lock_key, timeout=lock_timeout): # type:ignore
             try:

@@ -211,7 +211,6 @@ class AuctionItemSearchSerializer(AuctionItemSerializer):
     Serializer for search results, adding rank and headline.
     """
     rank = serializers.FloatField(read_only=True)
-    headline = serializers.CharField(read_only=True)
 
     class Meta(AuctionItemSerializer.Meta):
         fields = AuctionItemSerializer.Meta.fields + ['rank', ]

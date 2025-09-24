@@ -1,6 +1,7 @@
 import logging
 from django.db.models.signals import post_delete, post_save 
 from django.contrib.postgres.search import SearchVector
+from django.core.cache import cache
 from django.dispatch import receiver
 from .models import AuctionItem 
 
